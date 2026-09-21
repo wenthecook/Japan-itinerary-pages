@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "buildId": "489218abb86b2009",
+  "sessionDays": 30,
+  "kdf": {
+    "algorithm": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 250000,
+    "tokyoSalt": "vHZ5OuQ2dsBMT6zHevCmTA==",
+    "fullSalt": "7CBQ5DUJYtQJrcbqtYON9g=="
+  }
+}

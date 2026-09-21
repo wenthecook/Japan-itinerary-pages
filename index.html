@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b5a4a">
+  <meta name="description" content="私人日本旅行计划">
+  <title>日本旅行计划</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b5a4a'/%3E%3Cpath d='M15 43c9-3 14-10 17-24 3 14 8 21 17 24-7 2-12 2-17-2-5 4-10 4-17 2Z' fill='%23fff'/%3E%3Ccircle cx='46' cy='17' r='6' fill='%23e56936'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="auth-gate" id="authGate">
+    <section class="auth-card" aria-labelledby="authTitle">
+      <div class="auth-mark" aria-hidden="true">旅</div>
+      <p class="eyebrow">PRIVATE ITINERARY</p>
+      <h1 id="authTitle">日本旅行计划</h1>
+      <p class="auth-copy">请输入访问密码。验证只在当前设备中完成，成功后可记住30天。</p>
+      <form id="authForm">
+        <label for="passwordInput">访问密码</label>
+        <div class="password-row">
+          <input id="passwordInput" name="password" type="password" autocomplete="current-password" minlength="12" required>
+          <button id="passwordToggle" type="button" aria-label="显示密码">显示</button>
+        </div>
+        <button class="unlock-button" id="unlockButton" type="submit">打开行程</button>
+        <p class="auth-status" id="authStatus" role="status" aria-live="polite"></p>
+      </form>
+      <p class="auth-note">不同设备和不同网站地址需要分别输入一次。</p>
+    </section>
+  </main>
+
+  <div id="siteShell" hidden>
+    <header class="site-header">
+      <div class="brand-row">
+        <div><p class="eyebrow">2026 · JAPAN</p><h1>日本旅行计划</h1></div>
+        <div class="header-actions">
+          <button class="reading-button" id="readingButton" type="button" aria-pressed="false"><span aria-hidden="true">☰</span> 展开全文</button>
+          <button class="lock-button" id="lockButton" type="button">退出</button>
+        </div>
+      </div>
+      <nav class="date-tabs" id="dateTabs" aria-label="选择行程日期"></nav>
+    </header>
+    <main id="app" tabindex="-1"></main>
+  </div>
+
+  <template id="dayTemplate">
+    <article class="day-page">
+      <section class="day-hero"><p class="day-kicker"></p><h2 class="day-title"></h2><div class="context-chips"></div><p class="boundary"></p></section>
+      <section class="checklist-card" aria-labelledby="checklistTitle"><div class="section-heading-row"><div><p class="section-label">出发前与当天</p><h3 id="checklistTitle">今日总清单</h3></div><span class="check-progress" aria-live="polite"></span></div><div class="checklist"></div></section>
+      <section class="timeline-section" aria-labelledby="timelineTitle"><div class="section-heading-row timeline-heading"><div><p class="section-label">按时间执行</p><h3 id="timelineTitle">当日时间线</h3></div><span class="detail-hint">点开查看完整说明</span></div><div class="timeline"></div></section>
+      <section class="source-section" aria-labelledby="sourceTitle"><div class="section-heading-row"><div><p class="section-label">完整保留</p><h3 id="sourceTitle">补充说明与资料</h3></div></div><div class="source-accordions"></div></section>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
