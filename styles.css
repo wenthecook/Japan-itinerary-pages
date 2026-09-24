@@ -212,6 +212,10 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
   .detail-hint { display: none; }
   .weather-switch { padding: 9px; gap: 5px; }
   .weather-option { font-size: .72rem; }
+  #app[data-day="2026-11-17"] .timeline { --time-column: 64px; --timeline-gap: 6px; }
+  #app[data-day="2026-11-17"] .timeline-item { grid-template-columns: var(--time-column) 18px minmax(0, 1fr); }
+  #app[data-day="2026-11-17"] .timeline::before { left: calc(var(--time-column) + var(--timeline-gap) + 9px); }
+  #app[data-day="2026-11-17"] .timeline-dot { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

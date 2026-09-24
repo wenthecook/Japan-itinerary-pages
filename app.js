@@ -383,6 +383,7 @@
     const day = days.find((item) => item.id === activeId) || days[0];
     if (!day) { app.innerHTML = "<p>暂无行程数据。</p>"; return; }
     activeId = day.id; createTabs();
+    app.dataset.day = day.id;
     const fragment = template.content.cloneNode(true);
     fragment.querySelector(".day-kicker").textContent = `${day.tabDate} · ${day.weekday}`;
     fragment.querySelector(".day-title").textContent = day.title;
