@@ -135,9 +135,12 @@
       }).join("");
       const references = (extra.references || []).length ? `<p class="event-references">相关资料：${extra.references.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}</a>`).join("")}</p>` : "";
       const branch = prefix.startsWith("branch-");
+      const longMobileTime = !branch && entry.time.length > 18;
       const outsideTime = branch ? "" : timelineTimeMarkup(entry.time);
-      const insideTime = branch ? `<span class="time-label">${escapeHtml(entry.time)}</span>` : "";
-      return `<div class="timeline-item trace-target" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><details class="timeline-card" ${readingMode || (!allDetailsCollapsed && index < openCount) ? "open" : ""}><summary aria-label="${escapeHtml(entry.time)} ${escapeHtml(entry.title)}">${insideTime}<span class="event-title">${escapeHtml(entry.title)}</span></summary><div class="event-body md-content">${entry.bodyHtml}${alerts}${references}</div></details></div>`;
+      const insideTime = branch
+        ? `<span class="time-label">${escapeHtml(entry.time)}</span>`
+        : longMobileTime ? `<span class="time-label mobile-inline-time">${escapeHtml(entry.time)}</span>` : "";
+      return `<div class="timeline-item trace-target${longMobileTime ? " long-mobile-time" : ""}" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><details class="timeline-card" ${readingMode || (!allDetailsCollapsed && index < openCount) ? "open" : ""}><summary aria-label="${escapeHtml(entry.time)} ${escapeHtml(entry.title)}">${insideTime}<span class="event-title">${escapeHtml(entry.title)}</span></summary><div class="event-body md-content">${entry.bodyHtml}${alerts}${references}</div></details></div>`;
     }).join("");
   }
 
@@ -383,7 +386,6 @@
     const day = days.find((item) => item.id === activeId) || days[0];
     if (!day) { app.innerHTML = "<p>暂无行程数据。</p>"; return; }
     activeId = day.id; createTabs();
-    app.dataset.day = day.id;
     const fragment = template.content.cloneNode(true);
     fragment.querySelector(".day-kicker").textContent = `${day.tabDate} · ${day.weekday}`;
     fragment.querySelector(".day-title").textContent = day.title;
