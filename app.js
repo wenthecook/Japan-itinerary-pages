@@ -129,6 +129,12 @@
     return entries.map((entry, localIndex) => {
       const index = localIndex + startIndex;
       const extra = extras[index] || {};
+      let bodyHtml = entry.bodyHtml;
+      if (extra.image?.dataUrl) {
+        const picture = `<figure class="route-map"><img src="${escapeHtml(extra.image.dataUrl)}" alt="${escapeHtml(extra.image.alt)}" loading="lazy"><figcaption>${escapeHtml(extra.image.note)}</figcaption></figure>`;
+        let paragraph = 0;
+        bodyHtml = bodyHtml.replace(/<\/p>/g, ending => ending + (paragraph++ === extra.image.afterParagraph ? picture : ""));
+      }
       const alerts = (extra.alerts || []).map((item) => {
         const heading = item.bodyHtml.includes(`<strong>${escapeHtml(item.title)}：</strong>`) ? "" : `<strong>${escapeHtml(item.title)}</strong>`;
         return `<aside class="event-alert trace-target" id="${escapeHtml(item.id)}">${heading}<div>${item.bodyHtml}</div></aside>`;
@@ -140,7 +146,7 @@
       const insideTime = branch
         ? `<span class="time-label">${escapeHtml(entry.time)}</span>`
         : longMobileTime ? `<span class="time-label mobile-inline-time">${escapeHtml(entry.time)}</span>` : "";
-      return `<div class="timeline-item trace-target${longMobileTime ? " long-mobile-time" : ""}" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><details class="timeline-card" ${readingMode || (!allDetailsCollapsed && index < openCount) ? "open" : ""}><summary aria-label="${escapeHtml(entry.time)} ${escapeHtml(entry.title)}">${insideTime}<span class="event-title">${escapeHtml(entry.title)}</span></summary><div class="event-body md-content">${entry.bodyHtml}${alerts}${references}</div></details></div>`;
+      return `<div class="timeline-item trace-target${longMobileTime ? " long-mobile-time" : ""}" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><details class="timeline-card" ${readingMode || (!allDetailsCollapsed && index < openCount) ? "open" : ""}><summary aria-label="${escapeHtml(entry.time)} ${escapeHtml(entry.title)}">${insideTime}<span class="event-title">${escapeHtml(entry.title)}</span></summary><div class="event-body md-content">${bodyHtml}${alerts}${references}</div></details></div>`;
     }).join("");
   }
 
@@ -215,7 +221,8 @@
     container.innerHTML = day.checklist.map((item, index) => {
       const task = typeof item === "string" ? item : item.task;
       const reminder = typeof item === "string" ? "" : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
-      return `<label class="check-item trace-target" id="checklist-${index}"><input type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><span class="check-text"><span class="check-task">${escapeHtml(task)}</span>${reminder}</span></label>`;
+      const references = typeof item === "string" ? "" : (item.references || []).map((reference) => `<a href="${escapeHtml(reference.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.label)}</a>`).join(" · ");
+      return `<label class="check-item trace-target" id="checklist-${index}"><input type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><span class="check-text"><span class="check-task">${escapeHtml(task)}</span>${reminder}${references ? `<small class="check-reminder">${references}</small>` : ""}</span></label>`;
     }).join("");
     const update = () => {
       const selected = [...container.querySelectorAll("input:checked")].map((input) => Number(input.dataset.index));
@@ -264,15 +271,15 @@
     }
   }
 
-  function renderDecision(day) {
-    if (!day.decision) return "";
-    const stateKey = `japan-weather:${day.id}`;
-    const selected = localStorage.getItem(stateKey) || day.decision.options[0].id;
-    const option = day.decision.options.find((item) => item.id === selected) || day.decision.options[0];
-    const buttons = day.decision.options.map((item) => `<button class="weather-option" type="button" data-weather="${escapeHtml(item.id)}" aria-pressed="${item.id === option.id}"><span>${escapeHtml(item.icon)}</span>${escapeHtml(item.label)}</button>`).join("");
+  function renderDecision(day, config = day.decision) {
+    if (!config) return "";
+    const stateKey = `japan-weather:${day.id}${config.id ? ":" + config.id : ""}`;
+    const selected = localStorage.getItem(stateKey) || config.options[0].id;
+    const option = config.options.find((item) => item.id === selected) || config.options[0];
+    const buttons = config.options.map((item) => `<button class="weather-option" type="button" data-weather="${escapeHtml(item.id)}" aria-pressed="${item.id === option.id}"><span>${escapeHtml(item.icon)}</span>${escapeHtml(item.label)}</button>`).join("");
     const branch = option.timeline.length ? timelineMarkup(option.timeline, 1, {}, `branch-${option.id}`) : `<div class="source-content md-content">${option.bodyHtml}</div>`;
     const references = option.references?.length ? `<p class="event-references">相关资料：${option.references.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}</a>`).join("")}</p>` : "";
-    return `<div class="timeline-item decision-row trace-target" id="weather-decision">${timelineTimeMarkup(day.decision.time)}<span class="timeline-dot" aria-hidden="true"></span><section class="decision-item" data-decision><div class="decision-header"><span class="decision-kind">天气决策点</span><h4>${escapeHtml(day.decision.title)}</h4></div><div class="weather-switch" role="group" aria-label="选择天气方案">${buttons}</div><p class="decision-note">${escapeHtml(option.note)}</p><div class="branch-plan trace-target" id="decision-${escapeHtml(option.id)}">${branch}${references}</div></section></div>`;
+    return `<div class="timeline-item decision-row trace-target" id="${config.id || "weather-decision"}">${timelineTimeMarkup(config.time)}<span class="timeline-dot" aria-hidden="true"></span><section class="decision-item" data-decision="${escapeHtml(stateKey)}"><div class="decision-header"><span class="decision-kind">天气决策点</span><h4>${escapeHtml(config.title)}</h4></div><div class="weather-switch" role="group" aria-label="选择天气方案">${buttons}</div><p class="decision-note">${escapeHtml(option.note)}</p><div class="branch-plan trace-target" id="decision-${escapeHtml(option.id)}">${branch}${references}</div></section></div>`;
   }
 
   const traceLabels = {
@@ -288,9 +295,9 @@
 
   function tracePlaceLabel(day, target) {
     if (target === "weather-decision") return "天气决策点";
-    if (target.startsWith("decision-")) return `方案·${day.decision?.options.find((option) => `decision-${option.id}` === target)?.label || "天气路线"}`;
+    if (target.startsWith("decision-")) return `方案·${[...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => `decision-${option.id}` === target)?.label || "天气路线"}`;
     const branch = /^branch-([^-]+)-(\d+)$/.exec(target);
-    if (branch) return day.decision?.options.find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.title || "天气路线";
+    if (branch) return [...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.title || "天气路线";
     const event = /^event-(\d+)$/.exec(target);
     if (event && day.id !== "2026-11-17") {
       const title = day.timeline[Number(event[1])]?.title || "时间线";
@@ -315,7 +322,7 @@
     if (target === "weather-decision") return { time: day.decision?.time || "当天", timeTarget: target };
     if (target.startsWith("decision-")) return { time: day.decision?.time || "当天", timeTarget: "weather-decision" };
     const branch = /^branch-([^-]+)-(\d+)$/.exec(target);
-    if (branch) return { time: day.decision?.options.find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.time || "当天", timeTarget: target };
+    if (branch) return { time: [...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.time || "当天", timeTarget: target };
     if (target === "checklistTitle" || target.startsWith("checklist-")) return { time: "出发前与当天", timeTarget: "checklistTitle" };
     if (target === "timelineTitle") return { time: "当天", timeTarget: target };
     const event = /^event-(\d+)$/.exec(target);
@@ -374,12 +381,12 @@
   }
 
   function bindDecision(day) {
-    const decision = app.querySelector("[data-decision]");
-    if (!decision) return;
-    decision.querySelectorAll("[data-weather]").forEach((button) => button.addEventListener("click", () => {
-      localStorage.setItem(`japan-weather:${day.id}`, button.dataset.weather);
-      render();
-    }));
+    app.querySelectorAll("[data-decision]").forEach(decision => {
+      decision.querySelectorAll("[data-weather]").forEach(button => button.addEventListener("click", () => {
+        localStorage.setItem(decision.dataset.decision, button.dataset.weather);
+        render();
+      }));
+    });
   }
 
   function render() {
@@ -403,6 +410,7 @@
     } else {
       fragment.querySelector(".timeline").innerHTML = timelineMarkup(day.timeline, day.defaultOpenCount, day.timelineExtras) + renderDecision(day);
     }
+    if (day.morningDecision) fragment.querySelector("#event-0").insertAdjacentHTML("afterend", renderDecision(day, day.morningDecision));
     fragment.querySelector(".source-accordions").innerHTML = renderSources(day);
     app.replaceChildren(fragment);
     renderChecklist(day, app.querySelector(".checklist"), app.querySelector(".check-progress"));
@@ -464,7 +472,8 @@
     const branch = /^branch-([^-]+)-\d+$/.exec(link.dataset.jumpTarget);
     const requestedOption = branch?.[1] || (option && link.dataset.jumpMode === "place" ? option[1] : null);
     if (requestedOption && day?.decision) {
-      localStorage.setItem(`japan-weather:${activeId}`, requestedOption);
+      const morning = day.morningDecision?.options.some(item => item.id === requestedOption);
+      localStorage.setItem(`japan-weather:${activeId}${morning ? ":" + day.morningDecision.id : ""}`, requestedOption);
       render();
     }
     let target = document.getElementById(link.dataset.jumpTarget);
