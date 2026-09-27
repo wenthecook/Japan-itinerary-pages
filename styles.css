@@ -221,6 +221,14 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
   .long-mobile-time > .timeline-dot { grid-column: 2; }
   .long-mobile-time > .timeline-card { grid-column: 3; }
   .mobile-inline-time { display: block; }
+  .mobile-stacked-times::before { display: none; }
+  .mobile-stacked-times > .timeline-item { display: block; }
+  .mobile-stacked-times > .timeline-item > .timeline-dot { display: none; }
+  .mobile-stacked-times > .timeline-item > .timeline-time { display: block; padding: 0 0 7px; text-align: left; font-size: .9rem; }
+  .mobile-stacked-times .timeline-time-line { display: inline; }
+  .mobile-stacked-times .timeline-time-line + .timeline-time-line::before { content: "–"; }
+  .mobile-stacked-times .mobile-inline-time { display: none; }
+  .mobile-stacked-times .branch-plan .time-label { font-size: .9rem; }
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

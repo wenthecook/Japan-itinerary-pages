@@ -394,6 +394,7 @@
     if (!day) { app.innerHTML = "<p>暂无行程数据。</p>"; return; }
     activeId = day.id; createTabs();
     const fragment = template.content.cloneNode(true);
+    fragment.querySelector(".timeline").classList.add("mobile-stacked-times");
     fragment.querySelector(".day-kicker").textContent = `${day.tabDate} · ${day.weekday}`;
     fragment.querySelector(".day-title").textContent = day.title;
     fragment.querySelector(".context-chips").innerHTML = day.context.map((item) => `<span class="context-chip">${escapeHtml(item)}</span>`).join("");
