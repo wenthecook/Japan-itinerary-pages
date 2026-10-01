@@ -220,7 +220,7 @@
     const checked = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
     container.innerHTML = day.checklist.map((item, index) => {
       const task = typeof item === "string" ? item : item.task;
-      const reminder = typeof item === "string" ? "" : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
+      const reminder = typeof item === "string" || !item.reminder ? "" : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
       const references = typeof item === "string" ? "" : (item.references || []).map((reference) => `<a href="${escapeHtml(reference.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.label)}</a>`).join(" · ");
       return `<label class="check-item trace-target" id="checklist-${index}"><input type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><span class="check-text"><span class="check-task">${escapeHtml(task)}</span>${reminder}${references ? `<small class="check-reminder">${references}</small>` : ""}</span></label>`;
     }).join("");
