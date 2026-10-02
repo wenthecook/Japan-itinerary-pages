@@ -139,14 +139,15 @@
         const heading = item.bodyHtml.includes(`<strong>${escapeHtml(item.title)}：</strong>`) ? "" : `<strong>${escapeHtml(item.title)}</strong>`;
         return `<aside class="event-alert trace-target" id="${escapeHtml(item.id)}">${heading}<div>${item.bodyHtml}</div></aside>`;
       }).join("");
-      const references = (extra.references || []).length ? `<p class="event-references">相关资料：${extra.references.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}</a>`).join("")}</p>` : "";
+      const references = (extra.references || []).length ? `<details class="reference-details" ${readingMode ? "open" : ""}><summary>参考资料</summary><div>${extra.references.map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}</a>`).join(" · ")}</div></details>` : "";
       const branch = prefix.startsWith("branch-");
       const longMobileTime = !branch && entry.time.length > 18;
       const outsideTime = branch ? "" : timelineTimeMarkup(entry.time);
       const insideTime = branch
         ? `<span class="time-label">${escapeHtml(entry.time)}</span>`
         : longMobileTime ? `<span class="time-label mobile-inline-time">${escapeHtml(entry.time)}</span>` : "";
-      return `<div class="timeline-item trace-target${longMobileTime ? " long-mobile-time" : ""}" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><details class="timeline-card" ${readingMode || (!allDetailsCollapsed && index < openCount) ? "open" : ""}><summary aria-label="${escapeHtml(entry.time)} ${escapeHtml(entry.title)}">${insideTime}<span class="event-title">${escapeHtml(entry.title)}</span></summary><div class="event-body md-content">${bodyHtml}${alerts}${references}</div></details></div>`;
+      const open = readingMode || (!allDetailsCollapsed && index < openCount);
+      return `<div class="timeline-item trace-target${longMobileTime ? " long-mobile-time" : ""}" id="${prefix}-${index}">${outsideTime}<span class="timeline-dot" aria-hidden="true"></span><div class="timeline-card-wrap"><div class="event-heading"><span class="event-title">${insideTime}${escapeHtml(entry.title)}</span><button type="button" class="details-toggle" aria-expanded="${open}" aria-controls="${prefix}-${index}-details" aria-label="${open ? "收起" : "展开"}${escapeHtml(entry.title)}的详情">${open ? "−" : "+"}</button></div><details id="${prefix}-${index}-details" class="timeline-card" ${open ? "open" : ""}><summary>${escapeHtml(entry.title)}详情</summary><div class="event-body md-content">${bodyHtml}${alerts}${references}</div></details></div></div>`;
     }).join("");
   }
 
@@ -220,15 +221,19 @@
     const checked = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
     container.innerHTML = day.checklist.map((item, index) => {
       const task = typeof item === "string" ? item : item.task;
-      const reminder = typeof item === "string" || !item.reminder ? "" : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
+      const ticket = /^(?:景点)?购票[：:]/.test(task);
+      const reminder = typeof item === "string" || !item.reminder ? "" : ticket
+        ? `<span class="ticket-rows">${item.reminder.split(/(?<=。)\s+(?=[^。]{1,45}[：:])/u).filter(Boolean).map(row => `<span class="ticket-row">${escapeHtml(row)}</span>`).join("")}</span>`
+        : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
       const references = typeof item === "string" ? "" : (item.references || []).map((reference) => `<a href="${escapeHtml(reference.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.label)}</a>`).join(" · ");
-      return `<label class="check-item trace-target" id="checklist-${index}"><input type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><span class="check-text"><span class="check-task">${escapeHtml(task)}</span>${reminder}${references ? `<small class="check-reminder">${references}</small>` : ""}</span></label>`;
+      return `<div class="check-item trace-target" id="checklist-${index}"><input aria-label="${escapeHtml(task)}" type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><div class="check-text"><label class="check-task" for="check-${day.id}-${index}">${escapeHtml(task)}</label>${reminder}${references ? `<details class="reference-details" ${readingMode ? "open" : ""}><summary>参考资料</summary><div>${references}</div></details>` : ""}</div></div>`;
     }).join("");
     const update = () => {
       const selected = [...container.querySelectorAll("input:checked")].map((input) => Number(input.dataset.index));
       localStorage.setItem(key, JSON.stringify(selected));
       progress.textContent = `${selected.length} / ${day.checklist.length}`;
     };
+    container.querySelectorAll("input").forEach(input => { input.id = `check-${day.id}-${input.dataset.index}`; });
     container.addEventListener("change", update); update();
   }
 
@@ -389,10 +394,109 @@
     });
   }
 
+  function improveReadingLayout() {
+    // Split only at sentence boundaries, cloning inline markup without dropping text.
+    app.querySelectorAll(".event-body > p").forEach(paragraph => {
+      if (paragraph.textContent.length < 180 || paragraph.querySelector("img, code")) return;
+      const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+      const boundaries = [];
+      let length = 0;
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        for (let offset = 0; offset < node.length; offset++) {
+          length++;
+          if (node.data[offset] === "。" && length >= 85) { boundaries.push([node, offset + 1]); length = 0; }
+        }
+      }
+      if (!boundaries.length) return;
+      const fragment = document.createDocumentFragment();
+      let startNode = paragraph, startOffset = 0;
+      for (const [endNode, endOffset] of [...boundaries, [paragraph, paragraph.childNodes.length]]) {
+        const range = document.createRange();
+        range.setStart(startNode, startOffset); range.setEnd(endNode, endOffset);
+        const part = document.createElement("p"); part.append(range.cloneContents());
+        if (part.hasChildNodes()) fragment.append(part);
+        startNode = endNode; startOffset = endOffset;
+      }
+      paragraph.replaceWith(fragment);
+    });
+    app.querySelectorAll(".event-body > p").forEach(paragraph => {
+      if (!paragraph.querySelector("a") || /导航|操作|流程|实时|熊出没/.test(paragraph.textContent)) return;
+      const copy = paragraph.cloneNode(true);
+      copy.querySelectorAll("a").forEach(link => link.remove());
+      if (copy.textContent.replace(/[\s／/·：:。，,；;]/g, "")) return;
+      const details = document.createElement("details"); details.className = "reference-details";
+      details.open = readingMode;
+      const summary = document.createElement("summary"); summary.textContent = "参考资料";
+      paragraph.replaceWith(details); details.append(summary, paragraph);
+    });
+    app.querySelectorAll("img").forEach(img => {
+      const button = document.createElement("button"); button.type = "button"; button.className = "image-open";
+      button.setAttribute("aria-label", `放大查看：${img.alt || "图片"}`);
+      img.replaceWith(button); button.append(img);
+      const hint = document.createElement("span"); hint.className = "image-open-label"; hint.textContent = "点击放大";
+      button.append(hint);
+    });
+    app.querySelectorAll(".timeline-card").forEach(details => {
+      const button = details.previousElementSibling.querySelector(".details-toggle");
+      const sync = () => {
+        button.setAttribute("aria-expanded", String(details.open)); button.textContent = details.open ? "−" : "+";
+        button.setAttribute("aria-label", `${details.open ? "收起" : "展开"}${details.querySelector("summary").textContent}`);
+      };
+      button.addEventListener("click", () => { details.open = !details.open; sync(); });
+      details.addEventListener("toggle", sync);
+    });
+  }
+
+  const imageViewer = document.getElementById("imageViewer");
+  const viewerImage = document.getElementById("viewerImage");
+  const imageViewport = imageViewer.querySelector(".image-viewport");
+  let imageZoom = 1, imageOpener = null, pinch = null;
+  function zoomImage(value) {
+    imageZoom = Math.max(1, Math.min(6, value));
+    viewerImage.style.width = `${Math.max(1, imageViewport.clientWidth - 24) * imageZoom}px`;
+  }
+  imageViewer.addEventListener("click", event => {
+    const action = event.target.closest("[data-image-action]")?.dataset.imageAction;
+    if (action === "close") imageViewer.close();
+    if (action === "in") zoomImage(imageZoom * 1.4);
+    if (action === "out") zoomImage(imageZoom / 1.4);
+    if (action === "reset") { zoomImage(1); imageViewport.scrollTo(0, 0); }
+  });
+  imageViewer.addEventListener("close", () => {
+    document.body.classList.remove("image-viewing"); viewerImage.removeAttribute("src"); pinch = null;
+    imageOpener?.focus({ preventScroll: true });
+  });
+  const touchDistance = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+  imageViewport.addEventListener("touchstart", event => {
+    if (event.touches.length === 2) pinch = { distance: touchDistance(event.touches), zoom: imageZoom };
+  }, { passive: true });
+  imageViewport.addEventListener("touchmove", event => {
+    if (!pinch || event.touches.length !== 2) return;
+    event.preventDefault(); zoomImage(pinch.zoom * touchDistance(event.touches) / pinch.distance);
+  }, { passive: false });
+  imageViewport.addEventListener("touchend", () => { pinch = null; });
+  imageViewport.addEventListener("touchcancel", () => { pinch = null; });
+  window.addEventListener("resize", () => { if (imageViewer.open) zoomImage(imageZoom); });
+  const header = document.querySelector(".site-header");
+  const updateCompactHeader = () => header.classList.toggle("header-compact", window.scrollY > 190);
+  window.addEventListener("scroll", updateCompactHeader, { passive: true });
+  document.getElementById("compactCalendar").addEventListener("click", () => setCalendarOpen(calendarPanel.hidden));
+  document.getElementById("siteShell").addEventListener("click", event => {
+    const shortcut = event.target.closest("[data-section-target]");
+    if (!shortcut) return;
+    const target = document.getElementById(shortcut.dataset.sectionTarget);
+    if (!target) return;
+    setCalendarOpen(false);
+    target.setAttribute("tabindex", "-1"); target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+
   function render() {
     const day = days.find((item) => item.id === activeId) || days[0];
     if (!day) { app.innerHTML = "<p>暂无行程数据。</p>"; return; }
     activeId = day.id; createTabs();
+    document.getElementById("compactDate").textContent = `${day.tabDate} ${day.weekday} · ${day.shortTitle}`;
     const fragment = template.content.cloneNode(true);
     fragment.querySelector(".timeline").classList.add("mobile-stacked-times");
     fragment.querySelector(".day-kicker").textContent = `${day.tabDate} · ${day.weekday}`;
@@ -416,7 +520,9 @@
     app.replaceChildren(fragment);
     renderChecklist(day, app.querySelector(".checklist"), app.querySelector(".check-progress"));
     linkPlaceNames(app, day.mapPlaces);
+    improveReadingLayout();
     bindDecision(day);
+    updateCompactHeader();
     readingButton.setAttribute("aria-pressed", String(readingMode));
     readingButton.innerHTML = readingMode ? '<span aria-hidden="true">−</span> 收起详情' : '<span aria-hidden="true">☰</span> 展开全文';
     document.title = `${day.tabDate} ${day.shortTitle}｜日本旅行计划`;
@@ -465,6 +571,14 @@
   tabs.addEventListener("scroll", syncDateScrollbar, { passive: true });
   window.addEventListener("resize", syncDateScrollbar);
   app.addEventListener("click", (event) => {
+    const imageButton = event.target.closest(".image-open");
+    if (imageButton) {
+      imageOpener = imageButton;
+      const img = imageButton.querySelector("img"); viewerImage.src = img.src; viewerImage.alt = img.alt;
+      document.getElementById("imageViewerTitle").textContent = img.alt || "图片";
+      imageViewer.showModal(); document.body.classList.add("image-viewing"); zoomImage(1); imageViewport.scrollTo(0, 0);
+      return;
+    }
     const link = event.target.closest("[data-jump-target]");
     if (!link) return;
     event.preventDefault();
@@ -489,8 +603,11 @@
     const normalize = (value) => value.replace(/\s+/g, " ").trim();
     const sentence = normalize(link.dataset.sourceSentence || "");
     const exact = link.dataset.jumpMode === "place" && sentence && [...target.querySelectorAll("p, li, small, .check-text, a")].find((element) => normalize(element.textContent || "").includes(sentence));
-    const timeDestination = link.dataset.jumpMode === "time" ? target.querySelector(".timeline-time") || details?.querySelector("summary") : null;
+    const timeDestination = link.dataset.jumpMode === "time" ? target.querySelector(".timeline-time") || target.querySelector(".event-heading") || details?.querySelector("summary") : null;
     const destination = exact || timeDestination || target;
+    for (let ancestor = destination.parentElement; ancestor && ancestor !== app; ancestor = ancestor.parentElement) {
+      if (ancestor.matches("details")) ancestor.open = true;
+    }
     destination.scrollIntoView({ block: "center", behavior: "smooth" });
     destination.classList.remove("trace-flash");
     void destination.offsetWidth;

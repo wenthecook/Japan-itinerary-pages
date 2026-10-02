@@ -131,11 +131,11 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
 .timeline-time-line { display: block; white-space: nowrap; }
 .timeline-dot { position: relative; z-index: 1; width: 12px; height: 12px; margin: 18px 0 0 7px; border: 3px solid var(--green-2); border-radius: 50%; background: white; }
 .timeline-card { min-width: 0; border: 1px solid var(--line); border-radius: 15px; background: white; overflow: hidden; }
-.timeline-card summary { list-style: none; min-height: 58px; padding: 13px 42px 13px 15px; cursor: pointer; position: relative; }
-.timeline-card summary::-webkit-details-marker { display: none; }
-.timeline-card summary::after { content: "+"; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--green); font-size: 1.25rem; font-weight: 500; }
-.timeline-card[open] summary::after { content: "−"; }
-.timeline-card[open] summary { background: #fbfcfb; border-bottom: 1px solid var(--line); }
+.timeline-card > summary { list-style: none; min-height: 58px; padding: 13px 42px 13px 15px; cursor: pointer; position: relative; }
+.timeline-card > summary::-webkit-details-marker { display: none; }
+.timeline-card > summary::after { content: "+"; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--green); font-size: 1.25rem; font-weight: 500; }
+.timeline-card[open] > summary::after { content: "−"; }
+.timeline-card[open] > summary { background: #fbfcfb; border-bottom: 1px solid var(--line); }
 .time-label { display: block; color: var(--green-2); font-size: .81rem; font-weight: 800; }
 .mobile-inline-time { display: none; }
 .event-title { display: block; font-size: 1rem; font-weight: 760; line-height: 1.4; }
@@ -226,9 +226,79 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
   .mobile-stacked-times > .timeline-item > .timeline-dot { display: none; }
   .mobile-stacked-times > .timeline-item > .timeline-time { display: block; padding: 0 0 7px; text-align: left; font-size: .9rem; }
   .mobile-stacked-times .timeline-time-line { display: inline; }
-  .mobile-stacked-times .timeline-time-line + .timeline-time-line::before { content: "–"; }
+  .mobile-stacked-times .timeline-time-line + .timeline-time-line::before { content: ""; }
   .mobile-stacked-times .mobile-inline-time { display: none; }
   .mobile-stacked-times .branch-plan .time-label { font-size: .9rem; }
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Reading controls keep the itinerary intact and give its content more room. */
+.compact-navigation { display: none; }
+.section-shortcuts { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.section-shortcuts button { min-height: 44px; padding: 8px 13px; border: 1px solid #315f91; border-radius: 8px; color: #234f80; background: white; cursor: pointer; font-weight: 750; }
+.section-shortcuts button::after { content: " ↓"; }
+.section-shortcuts button:hover { background: #edf3fa; }
+.section-shortcuts button:focus-visible, .details-toggle:focus-visible { outline: 3px solid #91baa9; outline-offset: 2px; }
+[id$="Title"] { scroll-margin-top: 210px; }
+.event-heading { display: flex; align-items: center; padding-left: 15px; gap: 6px; background: #fbfcfb; }
+.event-heading .event-title { flex: 1; padding-block: 13px; min-width: 0; }
+.timeline-card > summary { display: none; }
+.timeline-card-wrap { min-width: 0; border: 1px solid var(--line); border-radius: 15px; overflow: hidden; background: white; }
+.timeline-card-wrap > .timeline-card { border: 0; border-radius: 0; }
+.timeline-card-wrap:has(> .timeline-card[open]) > .event-heading { border-bottom: 1px solid var(--line); }
+.details-toggle { display: grid; place-items: center; flex: 0 0 48px; align-self: stretch; min-height: 48px; border: 0; border-left: 1px solid var(--line); color: var(--green); background: transparent; font-size: 1.4rem; cursor: pointer; }
+.timeline-card:not([open]) > .event-heading { display: flex; }
+.timeline-card:not([open]) > .event-body { display: none; }
+.timeline-card[open] .event-heading { border-bottom: 1px solid var(--line); }
+.reference-details { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: .85rem; color: var(--muted); }
+.reference-details > summary { cursor: pointer; padding: 8px 0; min-height: 44px; font-weight: 700; }
+.reference-details a { display: inline-block; padding-block: 5px; }
+.ticket-row { display: block; padding: 9px 0; border-bottom: 1px dashed var(--line); color: #91412c; font-size: .92rem; font-weight: 650; line-height: 1.7; }
+.ticket-row .map-place-link { color: #91412c; background: #fff0e7; }
+.ticket-row .map-place-link:hover, .ticket-row .map-place-link:focus-visible { color: #6d2c1d; background: #ffe1d0; outline-color: #c68b75; }
+.ticket-row:last-child { border-bottom: 0; }
+.image-open { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.image-open:focus-visible { outline: 3px solid var(--green-2); outline-offset: 3px; }
+.image-open-label { display: block; color: var(--green); font-size: .8rem; padding: 5px; }
+.image-viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #17211f; color: white; }
+.image-viewer[open] { display: flex; flex-direction: column; }
+.image-viewer::backdrop { background: rgba(0,0,0,.85); }
+.image-toolbar { display: flex; align-items: center; gap: 5px; padding: max(8px, env(safe-area-inset-top)) 8px 8px; }
+.image-toolbar span { flex: 1; min-width: 0; font-size: .82rem; }
+.image-toolbar button { min-width: 44px; min-height: 44px; padding: 6px; border: 1px solid #71847d; border-radius: 7px; background: #294139; color: white; cursor: pointer; }
+.image-viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 12px; touch-action: pan-x pan-y; }
+.image-viewport img { display: block; max-width: none; height: auto; margin: auto; }
+body.image-viewing { overflow: hidden; }
+@media (max-width: 520px) {
+  /* The full header occupies a stable slot; its compact row overlays it.
+     This avoids a resize/scroll feedback loop when the header collapses. */
+  .site-header { min-height: 179px; position: relative; }
+  .compact-navigation { position: fixed; top: 0; left: 0; right: 0; z-index: 30; flex-direction: column; gap: 0; padding: 4px 12px 0; background: #0b5a4a; box-shadow: 0 3px 12px rgba(0,0,0,.16); }
+  .header-compact .compact-navigation { display: flex; }
+  .compact-date-row { display: flex; align-items: center; gap: 7px; min-height: 44px; }
+  .compact-navigation span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; font-size: .9rem; }
+  .compact-navigation button { min-height: 44px; padding: 6px 9px; border: 1px solid #80aa9b; border-radius: 8px; background: transparent; color: white; font-size: .85rem; }
+  .compact-section-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; height: 45px; align-items: start; padding-top: 5px; }
+  .compact-section-row button { min-height: 34px; height: 34px; border: 1px solid #c5d5e6; border-radius: 8px; padding: 3px 4px; color: #234f80; background: #f4f7fc; font-weight: 750; line-height: 1.4; }
+  .compact-section-row button::after { content: " ↓"; }
+  .compact-navigation button:hover, .compact-navigation button:focus-visible { background: rgba(255,255,255,.12); }
+  .compact-navigation button:focus-visible { outline: 2px solid white; outline-offset: -3px; }
+  .compact-section-row button:hover, .compact-section-row button:focus-visible { background: #e1ebf7; }
+  .compact-section-row button:focus-visible { outline-color: #234f80; }
+  .site-header:has(.calendar-panel:not([hidden])) { height: auto; }
+  .header-compact .calendar-panel:not([hidden]) { position: fixed; z-index: 31; top: 100px; left: 0; right: 0; max-height: calc(100dvh - 116px); overflow: auto; }
+  [id$="Title"], .trace-target { scroll-margin-top: 108px; }
+  .timeline-section { padding-inline: 10px; }
+  .event-body { padding-inline: 12px; }
+  .event-heading { padding-left: 12px; }
+  .decision-header { padding: 12px; }
+  .branch-plan { padding: 0 6px 8px; }
+  .branch-plan .timeline-item { padding-bottom: 8px; }
+  .branch-plan .timeline-item:last-child { padding-bottom: 0; }
+  .branch-plan .timeline-card-wrap { border: 1px solid var(--line); border-radius: 12px; }
+  .branch-plan .event-heading { padding-left: 10px; }
+  .branch-plan .event-body { padding-inline: 10px; }
+  .route-map { margin-inline: 0; padding: 4px 0; }
+  .route-map img { width: 100%; }
+}
