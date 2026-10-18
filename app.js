@@ -221,12 +221,14 @@
     const checked = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
     container.innerHTML = day.checklist.map((item, index) => {
       const task = typeof item === "string" ? item : item.task;
+      const taskHtml = (typeof item === "string" ? [] : item.highlights || []).reduce((html, phrase) => html.split(escapeHtml(phrase)).join(`<mark class="important-highlight">${escapeHtml(phrase)}</mark>`), escapeHtml(task));
       const ticket = /^(?:景点)?购票[：:]/.test(task);
       const reminder = typeof item === "string" || !item.reminder ? "" : ticket
         ? `<span class="ticket-rows">${item.reminder.split(/(?<=。)\s+(?=[^。]{1,45}[：:])/u).filter(Boolean).map(row => `<span class="ticket-row">${escapeHtml(row)}</span>`).join("")}</span>`
         : `<small class="check-reminder">${escapeHtml(item.reminder)}</small>`;
       const references = typeof item === "string" ? "" : (item.references || []).map((reference) => `<a href="${escapeHtml(reference.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(reference.label)}</a>`).join(" · ");
-      return `<div class="check-item trace-target" id="checklist-${index}"><input aria-label="${escapeHtml(task)}" type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><div class="check-text"><label class="check-task" for="check-${day.id}-${index}">${escapeHtml(task)}</label>${reminder}${references ? `<details class="reference-details" ${readingMode ? "open" : ""}><summary>参考资料</summary><div>${references}</div></details>` : ""}</div></div>`;
+      const links = typeof item === "string" ? "" : (item.links || []).map((link) => `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)}</a>`).join(" · ");
+      return `<div class="check-item trace-target" id="checklist-${index}"><input aria-label="${escapeHtml(task)}" type="checkbox" data-index="${index}" ${checked.has(index) ? "checked" : ""}><div class="check-text"><label class="check-task" for="check-${day.id}-${index}">${taskHtml}</label>${links ? `<div class="check-links">${links}</div>` : ""}${reminder}${references ? `<details class="reference-details" ${readingMode ? "open" : ""}><summary>参考资料</summary><div>${references}</div></details>` : ""}</div></div>`;
     }).join("");
     const update = () => {
       const selected = [...container.querySelectorAll("input:checked")].map((input) => Number(input.dataset.index));

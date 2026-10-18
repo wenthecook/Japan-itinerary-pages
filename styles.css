@@ -122,6 +122,7 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
 .check-item input:checked { border-color: var(--green-2); background: var(--green-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' d='m5 12 4 4L19 6'/%3E%3C/svg%3E") center/18px no-repeat; }
 .check-item:has(input:checked) .check-task { color: #8b9592; text-decoration: line-through; }
 .check-reminder { display: block; margin-top: 3px; color: #91412c; font-size: .82rem; font-weight: 650; }
+.important-highlight { color: #81351f; background: #ffe4b8; font-weight: 850; padding: 1px 3px; border-radius: 3px; }
 
 .detail-hint { color: var(--muted); font-size: .78rem; white-space: nowrap; }
 .timeline { --time-column: clamp(72px, 9vw, 86px); --timeline-gap: 10px; position: relative; display: grid; gap: 0; }
