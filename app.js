@@ -1,3 +1,6 @@
+import { createWeatherClient, weatherContext, weatherPresentation } from "./weather.mjs?v=20261020-details";
+import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
+
 (function () {
   "use strict";
 
@@ -26,6 +29,27 @@
   let sliderTarget = 0;
   let sliderAnimation = 0;
   let sliderDriving = false;
+  let weatherTimer;
+  let weatherRun = 0;
+  let weatherStorage;
+  try { weatherStorage = window.localStorage; } catch {}
+  const liveWeatherClient = createWeatherClient({ storage: weatherStorage });
+  let weatherBackend = liveWeatherClient;
+  let weatherNow = () => new Date();
+  let weatherClockLabel = () => '';
+  const weatherClient = {
+    snapshot: context => weatherBackend.snapshot(context),
+    request: (context, options) => weatherBackend.request(context, options)
+  };
+  // Debug dates are local-preview only, even if a config is accidentally copied elsewhere.
+  const weatherDebugStart = () => config?.passwordEnabled === false
+    && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname) ? config.weatherDebugStartDate : null;
+  const weatherPopup = createWeatherDialog({
+    client: weatherClient, debugStartDate: weatherDebugStart, now: () => weatherNow(), clockLabel: () => weatherClockLabel(),
+    onWeather(day, context, state) {
+      if (context.location.id === weatherContext(day, weatherDebugStart(), weatherNow()).location.id) paintWeather(day, context, state);
+    }
+  });
 
   const bytesToBase64 = (bytes) => {
     let binary = "";
@@ -105,6 +129,8 @@
     siteShell.hidden = false;
     lockButton.hidden = config.passwordEnabled === false;
     render();
+    clearInterval(weatherTimer);
+    weatherTimer = setInterval(refreshWeather, 60000);
     requestAnimationFrame(() => tabs.querySelector(`[data-day="${activeId}"]`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "auto" }));
   }
 
@@ -200,10 +226,66 @@
   }
 
   function createTabs() {
-    tabs.innerHTML = days.map((day) => `<button class="date-tab" type="button" role="tab" aria-selected="${day.id === activeId}" data-day="${escapeHtml(day.id)}"><span class="tab-top"><span>${escapeHtml(day.tabDate)} ${escapeHtml(day.weekday)}</span><span>${escapeHtml(day.icon)}</span></span><span class="tab-title">${escapeHtml(day.shortTitle)} · <span class="tab-weather">${escapeHtml(day.weather)}</span></span></button>`).join("");
-    tabs.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => selectDay(button.dataset.day)));
+    tabs.innerHTML = days.map((day) => `<div class="date-card"><button class="date-tab" type="button" role="tab" aria-selected="${day.id === activeId}" data-day="${escapeHtml(day.id)}"><span class="tab-top"><span>${escapeHtml(day.tabDate)} ${escapeHtml(day.weekday)}</span><span class="tab-weather-space" aria-hidden="true"></span></span><span class="tab-title">${escapeHtml(day.shortTitle)}</span><span class="tab-weather">天气加载中…</span><span class="tab-weather-place"></span></button><button class="weather-open" type="button" data-weather-day="${escapeHtml(day.id)}" aria-label="查看${escapeHtml(day.tabDate)}天气详情" aria-haspopup="dialog" aria-controls="weatherDialog"><span class="tab-weather-icon" aria-hidden="true">☀️❓</span></button></div>`).join("");
+    tabs.querySelectorAll(".date-tab").forEach((button) => button.addEventListener("click", () => selectDay(button.dataset.day)));
+    tabs.querySelectorAll(".weather-open").forEach((button) => button.addEventListener("click", () => {
+      const day = days.find(day => day.id === button.dataset.weatherDay);
+      if (day?.weatherPlan) weatherPopup.open(day, button);
+    }));
+    refreshWeather();
     requestAnimationFrame(syncDateScrollbar);
   }
+
+  function paintWeather(day, context, state) {
+    const button = tabs.querySelector(`[data-day="${day.id}"]`);
+    if (!button || siteShell.hidden) return;
+    const view = weatherPresentation(context, state);
+    const weatherButton = button.closest('.date-card').querySelector('.weather-open');
+    weatherButton.querySelector(".tab-weather-icon").textContent = view.icon;
+    button.querySelector(".tab-weather").textContent = view.text;
+    const debug = weatherDebugStart();
+    const place = `${context.location.label}${debug ? ` · 调试${context.date.slice(5).replace('-', '/')}` : ""}`;
+    button.querySelector(".tab-weather-place").textContent = place;
+    const fetched = state.fetchedAt ? `；获取于日本时间${new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Tokyo', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(state.fetchedAt)}` : "";
+    const detail = `${day.tabDate} ${day.shortTitle}；${place}；查询日期${context.date}；${view.text}${fetched}；${context.scheduled ? '按计划时段选择地点' : '当天主要活动地点'}；来源 Open-Meteo`;
+    button.title = detail;
+    button.setAttribute("aria-label", detail);
+    weatherButton.title = `查看天气详情：${detail}`;
+    weatherButton.setAttribute('aria-label', `查看${day.tabDate}天气详情：${context.location.label}，${view.text}`);
+    if (day.id === activeId) {
+      const notice = document.getElementById("weatherNotice");
+      notice.hidden = false;
+      notice.replaceChildren();
+      const label = document.createElement("span");
+      label.textContent = `${state.simulation ? `${state.simulation} · 非实际天气 · ` : ''}${weatherClockLabel() ? `${weatherClockLabel()} · ` : ''}${debug ? `天气调试：${day.tabDate} → ${context.date}（日本） · ` : ''}${context.location.label}${context.scheduled ? ' · 按计划时段选择' : ''}${state.status === 'stale' ? ` · 更新失败或待刷新，显示旧数据${fetched}` : ''} · `;
+      const source = document.createElement("a");
+      source.href = "https://open-meteo.com/";
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+      source.textContent = "天气来源 Open-Meteo";
+      if (state.simulation) { source.textContent = '模拟数据（本地生成）'; source.removeAttribute('href'); }
+      notice.append(label, source);
+    }
+  }
+
+  async function refreshWeather() {
+    if (siteShell.hidden || document.hidden || !days.length) return;
+    const run = ++weatherRun;
+    weatherPopup.refresh();
+    const jobs = days.filter(day => day.weatherPlan).map(day => ({ day, context: weatherContext(day, weatherDebugStart(), weatherNow()) }));
+    jobs.sort((a, b) => Number(b.day.id === activeId) - Number(a.day.id === activeId));
+    jobs.forEach(({ day, context }) => paintWeather(day, context, weatherClient.snapshot(context)));
+    let cursor = 0;
+    async function worker() {
+      while (cursor < jobs.length && run === weatherRun && !siteShell.hidden) {
+        const { day, context } = jobs[cursor++];
+        const state = await weatherClient.request(context);
+        if (run === weatherRun) paintWeather(day, context, state);
+      }
+    }
+    await Promise.all([worker(), worker(), worker()]);
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshWeather(); });
 
   function selectDay(id) {
     stopSliderAnimation();
@@ -615,7 +697,7 @@
     void destination.offsetWidth;
     destination.classList.add("trace-flash");
   });
-  lockButton.addEventListener("click", () => { localStorage.removeItem(SESSION_KEY); days = []; history.replaceState(null, "", location.pathname); document.title = "日本旅行计划"; showLogin(); });
+  lockButton.addEventListener("click", () => { weatherPopup.close(); localStorage.removeItem(SESSION_KEY); days = []; weatherRun++; clearInterval(weatherTimer); history.replaceState(null, "", location.pathname); document.title = "日本旅行计划"; showLogin(); });
   window.addEventListener("hashchange", () => { const requested = location.hash.slice(1); if (days.some((day) => day.id === requested)) { activeId = requested; calendarMonth = requested.slice(0, 7); render(); renderCalendar(); } });
 
   (async function bootstrap() {
@@ -623,6 +705,17 @@
       const response = await fetch("config.json", { cache: "no-store" });
       if (!response.ok) throw new Error();
       config = await response.json();
+      if (config.passwordEnabled === false && config.weatherPreviewTools === true
+          && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname)) {
+        const { installWeatherPreview } = await import('./preview-weather.mjs');
+        const preview = installWeatherPreview({ liveClient: liveWeatherClient, onChange() {
+          weatherPopup.invalidate();
+          refreshWeather();
+        } });
+        weatherBackend = preview.backend;
+        weatherNow = preview.now;
+        weatherClockLabel = preview.clockLabel;
+      }
       if (config.passwordEnabled === false) {
         const dataResponse = await fetch(config.dataUrl, { cache: "no-store" });
         if (!dataResponse.ok) throw new Error();

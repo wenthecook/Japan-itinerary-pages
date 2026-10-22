@@ -93,10 +93,81 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
 .date-scroll-control input::-moz-range-track { height: 10px; border-radius: 999px; background: rgba(210, 238, 228, .35); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .15); }
 .date-scroll-control input::-moz-range-thumb { width: 108px; height: 18px; border: 1px solid rgba(255,255,255,.65); border-radius: 999px; background: #e6f4ee; box-shadow: 0 2px 7px rgba(0,0,0,.24); }
 .date-scroll-control input:focus-visible { outline: 2px solid white; outline-offset: 1px; }
-.date-tab { flex: 0 0 126px; min-height: 67px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 13px; color: white; background: rgba(255,255,255,.1); text-align: left; cursor: pointer; }
+.date-card { flex: 0 0 126px; min-width: 0; position: relative; display: flex; }
+.date-tab { width: 100%; min-width: 0; min-height: 67px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 13px; color: white; background: rgba(255,255,255,.1); text-align: left; cursor: pointer; }
 .date-tab[aria-selected="true"] { color: var(--green); background: white; border-color: white; box-shadow: 0 7px 18px rgba(0,0,0,.15); }
 .tab-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: .84rem; font-weight: 780; white-space: nowrap; }
-.tab-weather { font-size: .75rem; opacity: .82; }
+.tab-weather { display: block; margin-top: 3px; font-size: .75rem; opacity: .9; white-space: nowrap; }
+.tab-weather-icon { font-size: .9rem; }
+.tab-weather-space { width: 27px; min-height: 28px; }
+.weather-open { position: absolute; top: 1px; right: 1px; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: white; cursor: pointer; }
+.date-card:has(.date-tab[aria-selected="true"]) .weather-open { color: var(--green); }
+.weather-open:hover { background: rgba(128,170,155,.22); }
+.weather-open:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.tab-weather-place { display: block; margin-top: 3px; font-size: .65rem; opacity: .78; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weather-notice { max-width: 860px; margin: 3px auto 0; padding: 0 18px; color: #d8eee7; font-size: .7rem; line-height: 1.6; }
+.weather-notice a { color: inherit; text-underline-offset: 2px; }
+.weather-dialog { width: min(540px, calc(100vw - 24px)); max-height: min(820px, calc(100dvh - 32px)); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); color: var(--ink); box-shadow: 0 24px 70px #102d3450; }
+.weather-dialog[open] { display: flex; flex-direction: column; }
+.weather-dialog::backdrop { background: #0b241d88; }
+.weather-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px 12px; }
+.weather-eyebrow { margin: 0 0 2px; color: var(--muted); font-size: .72rem; letter-spacing: .06em; }
+.weather-dialog h2 { margin: 0; font-size: 1.18rem; color: var(--green); }
+.weather-dialog-header button, .weather-dialog-footer button { min-height: 44px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 10px; color: var(--green); background: white; cursor: pointer; }
+.weather-dialog button:disabled { opacity: .55; cursor: default; }
+.weather-dialog button:focus-visible, .weather-hourly summary:focus-visible { outline: 2px solid var(--green); outline-offset: -3px; }
+.weather-locations { display: flex; flex: 0 0 auto; gap: 6px; overflow-x: auto; padding: 0 20px 12px; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.weather-locations button { flex: 0 0 auto; min-height: 44px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--muted); font-size: .82rem; cursor: pointer; }
+.weather-locations button[aria-selected="true"] { color: white; border-color: var(--green); background: var(--green); }
+.weather-detail { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 20px 18px; }
+.weather-query-date { margin: 0 0 14px; color: var(--muted); font-size: .75rem; }
+.weather-summary { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.weather-big-icon { font-size: 2.7rem; line-height: 1.2; }
+.weather-summary h3 { margin: 0 0 2px; font-size: 1rem; }
+.weather-summary p { margin: 0; font-size: .95rem; }
+.weather-summary strong { margin-left: 8px; color: var(--green); font-size: 1.25rem; }
+.weather-summary small { color: var(--muted); font-size: .72rem; }
+.weather-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 18px; }
+.weather-metrics div { padding: 10px 12px; background: var(--green-soft); border-radius: 10px; }
+.weather-metrics dt { font-size: .75rem; color: var(--muted); }
+.weather-metrics dd { margin: 2px 0 0; font-size: 1rem; font-weight: 700; color: var(--green); }
+.weather-hourly { border-top: 1px solid var(--line); }
+.weather-hourly summary { padding: 13px 0; color: var(--green); font-weight: 700; cursor: pointer; }
+.weather-hourly summary span { margin-left: 6px; font-size: .72rem; color: var(--muted); font-weight: 400; }
+.weather-hourly-hint, .weather-plan-note { margin: 0 0 10px; font-size: .73rem; color: var(--muted); line-height: 1.65; }
+.weather-plan-note { margin: 12px 0 0; }
+.weather-hourly-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.weather-hourly table { width: 100%; border-collapse: collapse; font-size: .76rem; white-space: nowrap; }
+.weather-hourly th, .weather-hourly td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+.weather-hourly thead th { background: var(--green-soft); font-weight: 600; }
+.weather-hourly tbody th { font-variant-numeric: tabular-nums; font-weight: 500; }
+.weather-hourly tr:last-child td, .weather-hourly tr:last-child th { border-bottom: 0; }
+.weather-empty { padding: 24px 4px; text-align: center; }
+.weather-empty > span { font-size: 2.6rem; }
+.weather-empty h3 { margin: 8px 0; font-size: 1rem; }
+.weather-empty p { color: var(--muted); }
+.weather-dialog-footer { flex: 0 0 auto; border-top: 1px solid var(--line); padding: 10px 20px 14px; font-size: .73rem; color: var(--muted); }
+.weather-dialog-footer p { margin: 0 0 5px; }
+.weather-dialog-footer p:empty { display: none; }
+.weather-dialog-footer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.weather-dialog-footer button { font-size: .8rem; }
+body.weather-viewing { overflow: hidden; }
+.weather-test-tools { flex: 0 0 auto; margin: 0 20px; border-bottom: 1px solid var(--line); font-size: .73rem; color: var(--muted); }
+.weather-test-tools > summary { padding: 8px 0; cursor: pointer; }
+.weather-test-tools[open] { max-height: 210px; overflow-y: auto; }
+.weather-test-tools label { display: block; margin-bottom: 8px; }
+.weather-test-tools select, .weather-test-tools input { width: 100%; margin-top: 3px; min-height: 36px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); }
+.weather-test-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.weather-test-actions button { min-height: 36px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--green); cursor: pointer; }
+.weather-simulation-label { margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; background: #fff0d8; color: #754712; font-size: .78rem; }
+@media (max-width: 520px) {
+  .weather-dialog { max-height: calc(100dvh - 20px); border-radius: 16px; }
+  .weather-dialog-header { padding: 12px 14px 10px; }
+  .weather-locations { padding-inline: 14px; }
+  .weather-detail { padding: 12px 14px 16px; }
+  .weather-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .weather-dialog-footer { padding: 10px 14px 12px; }
+}
 .tab-title { display: block; margin-top: 2px; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 #app { max-width: 860px; margin: auto; padding: 26px 18px 80px; }
@@ -206,7 +277,7 @@ a { color: var(--green-2); text-underline-offset: 3px; overflow-wrap: anywhere; 
   .date-scroll-control input::-webkit-slider-thumb { width: 76px; }
   .date-scroll-control input::-moz-range-thumb { width: 76px; }
   .calendar-panel { margin-inline: 10px; }
-  .date-tab { flex-basis: 116px; }
+  .date-card { flex-basis: 116px; }
   #app { padding: 16px 10px 60px; }
   .day-page { gap: 12px; }
   .day-hero, .checklist-card, .timeline-section, .source-section { border-radius: 17px; }

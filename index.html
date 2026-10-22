@@ -7,7 +7,7 @@
   <meta name="description" content="私人日本旅行计划">
   <title>日本旅行计划</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b5a4a'/%3E%3Cpath d='M15 43c9-3 14-10 17-24 3 14 8 21 17 24-7 2-12 2-17-2-5 4-10 4-17 2Z' fill='%23fff'/%3E%3Ccircle cx='46' cy='17' r='6' fill='%23e56936'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20261018-highlight">
+  <link rel="stylesheet" href="styles.css?v=20261020-weather-details">
 </head>
 <body>
   <main class="auth-gate" id="authGate">
@@ -43,9 +43,17 @@
       <div class="calendar-panel" id="calendarPanel" hidden></div>
       <nav class="date-tabs" id="dateTabs" aria-label="选择行程日期"></nav>
       <div class="date-scroll-control"><label class="sr-only" for="dateScrollbar">拖动查看所有日期</label><input id="dateScrollbar" type="range" min="0" max="1000" value="0" aria-label="拖动查看所有日期"></div>
+      <p class="weather-notice" id="weatherNotice" hidden></p>
     </header>
     <main id="app" tabindex="-1"></main>
   </div>
+
+  <dialog id="weatherDialog" class="weather-dialog" aria-labelledby="weatherDialogTitle">
+    <header class="weather-dialog-header"><div><p class="weather-eyebrow">当地天气 · 日本时间</p><h2 id="weatherDialogTitle">天气详情</h2></div><button type="button" id="weatherClose" aria-label="关闭天气详情">关闭</button></header>
+    <div id="weatherLocations" class="weather-locations" role="tablist" aria-label="天气地点"></div>
+    <div id="weatherDetail" class="weather-detail" role="tabpanel" tabindex="0"></div>
+    <footer class="weather-dialog-footer"><p id="weatherFetched" aria-live="polite"></p><div><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">天气来源 Open-Meteo</a><button type="button" id="weatherRefresh">刷新天气</button></div></footer>
+  </dialog>
 
   <dialog id="imageViewer" class="image-viewer" aria-labelledby="imageViewerTitle">
     <div class="image-toolbar"><span id="imageViewerTitle"></span><button type="button" data-image-action="out" aria-label="缩小图片">−</button><button type="button" data-image-action="in" aria-label="放大图片">＋</button><button type="button" data-image-action="reset">复位</button><button type="button" data-image-action="close" aria-label="关闭图片">关闭</button></div>
@@ -61,6 +69,6 @@
     </article>
   </template>
 
-  <script src="app.js?v=20261018-highlight"></script>
+  <script type="module" src="app.js?v=20261020-weather-details"></script>
 </body>
 </html>
