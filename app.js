@@ -586,8 +586,10 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
     fragment.querySelector(".day-kicker").textContent = `${day.tabDate} · ${day.weekday}`;
     fragment.querySelector(".day-title").textContent = day.title;
     fragment.querySelector(".context-chips").innerHTML = day.context.map((item) => `<span class="context-chip">${escapeHtml(item)}</span>`).join("");
-    fragment.querySelector(".boundary").textContent = day.boundary;
-    if (day.overviewHtml) fragment.querySelector(".boundary").insertAdjacentHTML("afterend", `<div class="overview-copy md-content trace-target" id="day-overview">${day.overviewHtml}</div>`);
+    const boundary = fragment.querySelector(".boundary");
+    if (day.boundary) boundary.textContent = day.boundary;
+    if (day.overviewHtml) boundary.insertAdjacentHTML("afterend", `<div class="overview-copy md-content trace-target" id="day-overview">${day.overviewHtml}</div>`);
+    if (!day.boundary) boundary.remove();
     else fragment.querySelector(".day-hero").id = "day-overview";
     if (Number.isInteger(day.decisionAfterIndex)) {
       const split = day.decisionAfterIndex + 1;
