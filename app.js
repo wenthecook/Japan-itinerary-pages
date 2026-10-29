@@ -154,7 +154,7 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
   function timelineMarkup(entries, openCount = 0, extras = {}, prefix = "event", startIndex = 0) {
     return entries.map((entry, localIndex) => {
       const index = localIndex + startIndex;
-      const extra = extras[index] || {};
+      const extra = { ...(entry.image ? { image: entry.image } : {}), ...(extras[index] || {}) };
       let bodyHtml = entry.bodyHtml;
       if (extra.image?.dataUrl) {
         const picture = `<figure class="route-map"><img src="${escapeHtml(extra.image.dataUrl)}" alt="${escapeHtml(extra.image.alt)}" loading="lazy"><figcaption>${escapeHtml(extra.image.note)}</figcaption></figure>`;
@@ -360,6 +360,10 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
     }
   }
 
+  function decisionConfigs(day) {
+    return [day.decision, day.morningDecision, ...(day.additionalDecisions || [])].filter(Boolean);
+  }
+
   function renderDecision(day, config = day.decision) {
     if (!config) return "";
     const stateKey = `japan-weather:${day.id}${config.id ? ":" + config.id : ""}`;
@@ -384,9 +388,12 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
 
   function tracePlaceLabel(day, target) {
     if (target === "weather-decision") return "天气决策点";
-    if (target.startsWith("decision-")) return `方案·${[...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => `decision-${option.id}` === target)?.label || "天气路线"}`;
+    const configs = decisionConfigs(day);
+    const config = configs.find(item => item.id === target);
+    if (config) return config.title;
+    if (target.startsWith("decision-")) return `方案·${configs.flatMap(item => item.options).find((option) => `decision-${option.id}` === target)?.label || "路线"}`;
     const branch = /^branch-([^-]+)-(\d+)$/.exec(target);
-    if (branch) return [...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.title || "天气路线";
+    if (branch) return configs.flatMap(item => item.options).find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.title || "路线";
     const event = /^event-(\d+)$/.exec(target);
     if (event && day.id !== "2026-11-17") {
       const title = day.timeline[Number(event[1])]?.title || "时间线";
@@ -407,11 +414,14 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
   }
 
   function traceLocation(day, target) {
+    const configs = decisionConfigs(day);
+    const config = configs.find(item => item.id === target || item.options.some(option => `decision-${option.id}` === target));
+    if (config) return { time: config.time, timeTarget: config.id || "weather-decision" };
     if (target === "day-overview") return { time: "当日概览", timeTarget: target };
     if (target === "weather-decision") return { time: day.decision?.time || "当天", timeTarget: target };
     if (target.startsWith("decision-")) return { time: day.decision?.time || "当天", timeTarget: "weather-decision" };
     const branch = /^branch-([^-]+)-(\d+)$/.exec(target);
-    if (branch) return { time: [...(day.decision?.options || []), ...(day.morningDecision?.options || [])].find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.time || "当天", timeTarget: target };
+    if (branch) return { time: configs.flatMap(item => item.options).find((option) => option.id === branch[1])?.timeline[Number(branch[2])]?.time || "当天", timeTarget: target };
     if (target === "checklistTitle" || target.startsWith("checklist-")) return { time: "出发前与当天", timeTarget: "checklistTitle" };
     if (target === "timelineTitle") return { time: "当天", timeTarget: target };
     const event = /^event-(\d+)$/.exec(target);
@@ -602,6 +612,7 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
       fragment.querySelector(".timeline").innerHTML = timelineMarkup(day.timeline, day.defaultOpenCount, day.timelineExtras) + renderDecision(day);
     }
     if (day.morningDecision) fragment.querySelector("#event-0").insertAdjacentHTML("afterend", renderDecision(day, day.morningDecision));
+    for (const config of day.additionalDecisions || []) fragment.querySelector(`#event-${config.afterIndex}`).insertAdjacentHTML("afterend", renderDecision(day, config));
     fragment.querySelector(".source-accordions").innerHTML = renderSources(day);
     app.replaceChildren(fragment);
     renderChecklist(day, app.querySelector(".checklist"), app.querySelector(".check-progress"));
@@ -672,9 +683,9 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
     const option = /^decision-(.+)$/.exec(link.dataset.jumpTarget);
     const branch = /^branch-([^-]+)-\d+$/.exec(link.dataset.jumpTarget);
     const requestedOption = branch?.[1] || (option && link.dataset.jumpMode === "place" ? option[1] : null);
-    if (requestedOption && day?.decision) {
-      const morning = day.morningDecision?.options.some(item => item.id === requestedOption);
-      localStorage.setItem(`japan-weather:${activeId}${morning ? ":" + day.morningDecision.id : ""}`, requestedOption);
+    if (requestedOption && day) {
+      const config = decisionConfigs(day).find(item => item.options.some(option => option.id === requestedOption));
+      if (config) localStorage.setItem(`japan-weather:${activeId}${config.id ? ":" + config.id : ""}`, requestedOption);
       render();
     }
     let target = document.getElementById(link.dataset.jumpTarget);

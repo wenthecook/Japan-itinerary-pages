@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "passwordEnabled": true,
-  "buildId": "9e42d642922980ff",
+  "buildId": "f0e759dab89e1080",
   "sessionDays": 30,
   "kdf": {
     "algorithm": "PBKDF2",
