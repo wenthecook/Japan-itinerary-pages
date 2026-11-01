@@ -156,10 +156,11 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
       const index = localIndex + startIndex;
       const extra = { ...(entry.image ? { image: entry.image } : {}), ...(extras[index] || {}) };
       let bodyHtml = entry.bodyHtml;
-      if (extra.image?.dataUrl) {
-        const picture = `<figure class="route-map"><img src="${escapeHtml(extra.image.dataUrl)}" alt="${escapeHtml(extra.image.alt)}" loading="lazy"><figcaption>${escapeHtml(extra.image.note)}</figcaption></figure>`;
+      for (const image of extra.images || [extra.image].filter(Boolean)) {
+        if (!image.dataUrl) continue;
+        const picture = `<figure class="route-map"><img src="${escapeHtml(image.dataUrl)}" alt="${escapeHtml(image.alt)}" loading="lazy"><figcaption>${escapeHtml(image.note)}</figcaption></figure>`;
         let paragraph = 0;
-        bodyHtml = bodyHtml.replace(/<\/p>/g, ending => ending + (paragraph++ === extra.image.afterParagraph ? picture : ""));
+        bodyHtml = bodyHtml.replace(/<\/p>/g, ending => ending + (paragraph++ === image.afterParagraph ? picture : ""));
       }
       const alerts = (extra.alerts || []).map((item) => {
         const heading = item.bodyHtml.includes(`<strong>${escapeHtml(item.title)}：</strong>`) ? "" : `<strong>${escapeHtml(item.title)}</strong>`;
