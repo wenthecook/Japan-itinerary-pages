@@ -517,6 +517,8 @@ import { createWeatherDialog } from "./weather-dialog.mjs?v=20261020-details";
     });
     app.querySelectorAll(".event-body > p").forEach(paragraph => {
       if (!paragraph.querySelector("a") || /导航|操作|流程|实时|熊出没/.test(paragraph.textContent)) return;
+      // Driving directions are actionable itinerary links, so keep them visible.
+      if (paragraph.querySelector('a[href*="google.com/maps/dir/"], a[href*="google.com/maps/dir?"]')) return;
       const copy = paragraph.cloneNode(true);
       copy.querySelectorAll("a").forEach(link => link.remove());
       if (copy.textContent.replace(/[\s／/·：:。，,；;]/g, "")) return;
